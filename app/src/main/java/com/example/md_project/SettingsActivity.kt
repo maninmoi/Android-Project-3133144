@@ -60,6 +60,7 @@ fun SettingsScreen(paddingModifier: Modifier) {
     }
 }
 
+//Displays a dropdown menu with multiple selectable values
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExposedDropdownMenuBox() {
@@ -101,6 +102,7 @@ fun ExposedDropdownMenuBox() {
     }
 }
 
+//Displays a switch with custom colors
 @Composable
 fun Switch() {
     var checked by remember { mutableStateOf(true) }

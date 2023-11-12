@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen() {
     val navController = rememberNavController()
     Scaffold(
-        bottomBar = { AppNavBar(navController = navController) },
+        bottomBar = { AppNavBar(navController = navController) }, //Creates a navbar for all activities
     )
     {paddingValues->
         NavigationGraph(

@@ -72,9 +72,9 @@ fun HealthScreen(paddingModifier: Modifier) {
 
 @Composable
 fun TemperatureSlider() {
-    var selectedValue by remember { mutableFloatStateOf(20f) }
+    var selectedValue by remember { mutableFloatStateOf(20f) } //The currently selected value
 
-    val predefinedValues = generateTemperatures(-20.0,40.0,0.5)
+    val predefinedValues = generateTemperatures(-20.0,40.0,0.5) //Calls generateTemperatures to create points in the slider
 
     Column(
 
@@ -101,6 +101,7 @@ fun TemperatureSlider() {
     }
 }
 
+//Takes a start temperature, end temperature and interval. This will generate temperatures for the slider. Returns a MutableList<Double>
 fun generateTemperatures(start: Double, end: Double, interval: Double): MutableList<Double> {
     val temperatures = mutableListOf(start)
     var x = start+interval
@@ -113,6 +114,7 @@ fun generateTemperatures(start: Double, end: Double, interval: Double): MutableL
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+//Displays an editable text field to allow finer input of temperatures
 fun DoubleTextField() {
     var text by remember { mutableStateOf("") }
     var doubleValue by remember { mutableDoubleStateOf(0.0) }

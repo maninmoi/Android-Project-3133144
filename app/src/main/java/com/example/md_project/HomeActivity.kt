@@ -47,7 +47,6 @@ fun HomeScreen(paddingModifier: Modifier) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            //DisplayText(text = "Weather information hub", 24.sp)
             TextInBox(text = "Weather information hub")
             Spacer(modifier = Modifier.height(16.dp))
             //Temperature
@@ -102,7 +101,7 @@ fun HomeScreen(paddingModifier: Modifier) {
 }
 
 @Composable
-fun WeatherBox(
+fun WeatherBox( //Takes 4 parameters and builds a box with content out of it
     icon: ImageVector,
     label: String,
     value: String,
@@ -141,7 +140,7 @@ fun WeatherBox(
 }
 
 @Composable
-fun DisplayText(text: String, fontSize: TextUnit) {
+fun DisplayText(text: String, fontSize: TextUnit) { //function to displaytext. text and fontsize must be given when called
     Column(
         modifier = Modifier
             .background(Color.Black.copy(alpha = 0f))
@@ -157,7 +156,7 @@ fun DisplayText(text: String, fontSize: TextUnit) {
 }
 
 @Composable
-fun DrawBackground(image: Int){
+fun DrawBackground(image: Int){ //Draws the background. Takes a R.drawable as a parameter
     Box(){
         Image(
             painter = painterResource(id = image),
@@ -169,7 +168,7 @@ fun DrawBackground(image: Int){
 }
 
 @Composable
-fun TextInBox(text: String) {
+fun TextInBox(text: String) { //Draws text in a box. Takes the text as a parameter
     Box(
         modifier = Modifier
             .background(BlueCustom)

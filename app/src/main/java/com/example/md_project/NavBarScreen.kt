@@ -18,22 +18,23 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.md_project.ui.theme.BlueCustom
 
+//
 sealed class NavBar(
-    val route: String,
-    val label: String,
-    val icon: ImageVector
+    val route: String, //Route for the navhost
+    val label: String, //Label to display
+    val icon: ImageVector //Icon to display
 ) {
-    object Home: NavBar(
+    object Home: NavBar( //Object for the home button
         route="home",
         label="Home",
         icon= Icons.Rounded.Home
     )
-    object Health: NavBar(
+    object Health: NavBar( //Object for the health button
         route="health",
         label="Health",
         icon= Icons.Rounded.HealthAndSafety
     )
-    object Settings: NavBar(
+    object Settings: NavBar( //Object for the settings button
         route="settings",
         label="Settings",
         icon= Icons.Rounded.Settings
@@ -45,16 +46,16 @@ fun NavigationGraph(
     navController: NavHostController,
     paddingModifier: Modifier
 ) {
-    NavHost(navController = navController,
-        startDestination = NavBar.Home.route
+    NavHost(navController = navController, //Configuring the navcontroller
+        startDestination = NavBar.Home.route //First activity that is loaded
     ) {
-        composable(route= NavBar.Home.route) {
+        composable(route= NavBar.Home.route) {//Route to home screen
             HomeScreen(paddingModifier)
         }
-        composable(route= NavBar.Health.route) {
+        composable(route= NavBar.Health.route) {//Route to health screen
             HealthScreen(paddingModifier)
         }
-        composable(route= NavBar.Settings.route) {
+        composable(route= NavBar.Settings.route) {//Route to settings screen
             SettingsScreen(paddingModifier)
         }
     }
@@ -71,7 +72,7 @@ fun AppNavBar(navController: NavHostController) {
         containerColor = BlueCustom, //Navbar color
         )
      {
-        screens.forEach { screen ->
+        screens.forEach { screen -> //Adds the screen and navcontoller to the screens list
             AddItem(
                 screen = screen,
                 navController = navController
