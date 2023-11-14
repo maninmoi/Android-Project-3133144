@@ -40,7 +40,7 @@ fun HomeScreen(paddingModifier: Modifier) {
         modifier = paddingModifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        DrawBackground(R.drawable.clouds_background) //The background will change according to the current weather in future versions
+        DrawBackground(R.drawable.clouds_background, "cloud background") //The background will change according to the current weather in future versions
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -156,11 +156,11 @@ fun DisplayText(text: String, fontSize: TextUnit) { //function to displaytext. t
 }
 
 @Composable
-fun DrawBackground(image: Int){ //Draws the background. Takes a R.drawable as a parameter
+fun DrawBackground(image: Int, conentdescription: String){ //Draws the background. Takes a R.drawable as a parameter
     Box(){
         Image(
             painter = painterResource(id = image),
-            contentDescription = "null",
+            contentDescription = conentdescription,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
