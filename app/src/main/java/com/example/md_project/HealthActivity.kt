@@ -1,5 +1,9 @@
 package com.example.md_project
 
+import android.annotation.SuppressLint
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -29,14 +34,43 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
+import com.example.md_project.api.WeatherViewModel
 import com.example.md_project.ui.theme.BlueCustom
 import java.text.DecimalFormat
+import java.util.concurrent.TimeUnit
 
+class HealthActivity : ComponentActivity() {
+    private lateinit var weatherViewModel: WeatherViewModel
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @OptIn(ExperimentalMaterial3Api::class)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
+        weatherViewModel = ViewModelProvider(this).get(WeatherViewModel::class.java)
+
+        val periodicWorkRequest = PeriodicWorkRequest.Builder(
+            CheckTemperatureInIntervals::class.java,
+            15, TimeUnit.MINUTES //Interval
+        ).build()
+
+        // Enqueue the work request
+        WorkManager.getInstance(this).enqueue(periodicWorkRequest)
+        setContent {
+            Scaffold(
+                bottomBar = { BottomNavBar() }
+            ) {
+                HealthScreen()
+            }
+        }
+    }
+}
 @Composable
-fun HealthScreen(paddingModifier: Modifier) {
+fun HealthScreen() {
     Surface(
-        modifier = paddingModifier.fillMaxSize(),
+        modifier = Modifier.padding().fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
         Column(

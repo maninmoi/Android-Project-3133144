@@ -1,6 +1,10 @@
 package com.example.md_project
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.HealthAndSafety
 import androidx.compose.material.icons.rounded.Home
@@ -12,95 +16,92 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import com.example.md_project.ui.theme.BlueCustom
+import com.example.md_project.ui.theme.BlueCustom2
 
-//
-sealed class NavBar(
-    val route: String, //Route for the navhost
-    val label: String, //Label to display
-    val icon: ImageVector //Icon to display
+sealed class BottomBarItem( //Holds info of the navbar objects
+    val activityClass: Class<*>, //List of Activites
+    val navLabel: String, //Label
+    val navIcon: ImageVector //Icon
 ) {
-    object Home: NavBar( //Object for the home button
-        route="home",
-        label="Home",
-        icon= Icons.Rounded.Home
+    object Home : BottomBarItem( //Home object
+        HomeActivity::class.java, //Activity
+        "Home", //Label
+        Icons.Rounded.Home //Icon
     )
-    object Health: NavBar( //Object for the health button
-        route="health",
-        label="Health",
-        icon= Icons.Rounded.HealthAndSafety
+    object Health : BottomBarItem( //Health object
+        HealthActivity::class.java, //Activity
+        "Health", //Label
+        Icons.Rounded.HealthAndSafety //Icon
     )
-    object Settings: NavBar( //Object for the settings button
-        route="settings",
-        label="Settings",
-        icon= Icons.Rounded.Settings
+    object Settings : BottomBarItem( //Settings object
+        SettingsActivity::class.java, //Activity
+        "Settings", //Label
+        Icons.Rounded.Settings //Icon
     )
-}
-
-@Composable
-fun NavigationGraph(
-    navController: NavHostController,
-    paddingModifier: Modifier
-) {
-    NavHost(navController = navController, //Configuring the navcontroller
-        startDestination = NavBar.Home.route //First activity that is loaded
-    ) {
-        composable(route= NavBar.Home.route) {//Route to home screen
-            HomeScreen(paddingModifier)
-        }
-        composable(route= NavBar.Health.route) {//Route to health screen
-            HealthScreen(paddingModifier)
-        }
-        composable(route= NavBar.Settings.route) {//Route to settings screen
-            SettingsScreen(paddingModifier)
-        }
-    }
 }
 
 
 @Composable
-fun AppNavBar(navController: NavHostController) {
-    val screens = listOf(
-        NavBar.Home,
-        NavBar.Health,
-        NavBar.Settings
+fun BottomNavBar() {
+    val context = LocalContext.current //Saves the current context into a variable
+    val screenList = listOf(
+        BottomBarItem.Home,
+        BottomBarItem.Health,
+        BottomBarItem.Settings,
     )
+
     NavigationBar(
-        containerColor = BlueCustom, //Navbar color
-        )
-     {
-        screens.forEach { screen -> //Adds the screen and navcontoller to the screens list
-            AddItem(
+        modifier = Modifier
+            .fillMaxWidth(),
+        containerColor = BlueCustom2.copy(alpha = 0.3f), //Color for the container. Is Opaque
+    ) {
+        screenList.forEach { screen -> //Adds the screens to the screenlist
+            AddScreen(
                 screen = screen,
-                navController = navController
+                context = context
             )
         }
     }
 }
 
 @Composable
-fun RowScope.AddItem(
-    screen: NavBar,
-    navController: NavHostController
+fun RowScope.AddScreen(
+    screen: BottomBarItem,
+    context: Context
 ) {
-    val backStackEntry = navController.currentBackStackEntryAsState()
+    val isSelected = when (context) {
+        is Activity -> context::class.java == screen.activityClass
+        else -> false
+    }
+
     NavigationBarItem(
-        label = {
-            Text(text = screen.label)
-        },
+        colors = androidx.compose.material3.NavigationBarItemDefaults
+            .colors(
+                selectedIconColor = BlueCustom,
+                indicatorColor = BlueCustom,
+            ),
         icon = {
             Icon(
-                imageVector = screen.icon,
-                contentDescription = screen.route + " icon"
+                imageVector = screen.navIcon,
+                contentDescription = screen.navLabel,
+                tint = colorResource(id = R.color.black)
             )
         },
-        selected = screen.route == backStackEntry.value?.destination?.route,
+        label = {
+            Text(
+                text = screen.navLabel,
+                color = colorResource(id = R.color.black)
+            )
+        },
+        selected = isSelected,
         onClick = {
-            navController.navigate(screen.route)
+            if (!isSelected) {
+                val intent = Intent(context, screen.activityClass)
+                context.startActivity(intent)
+            }
         }
     )
 }

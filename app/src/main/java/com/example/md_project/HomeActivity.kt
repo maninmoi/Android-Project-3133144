@@ -1,5 +1,11 @@
 package com.example.md_project
 
+import LocationHelper
+import android.annotation.SuppressLint
+import android.os.Bundle
+import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,8 +23,10 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,15 +47,55 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.md_project.api.WeatherViewModel
 import com.example.md_project.ui.theme.BlueCustom
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import java.text.DecimalFormat
 
-@Composable
-    fun HomeScreen(paddingModifier: Modifier) {
-        //Temperature sensor
-        val context = LocalContext.current //Gets the current context
+class HomeActivity : ComponentActivity() {
+    private lateinit var locationHelper: LocationHelper
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @OptIn(ExperimentalMaterial3Api::class)
 
-        var actualtemperature by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the temperature value
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        locationHelper = LocationHelper(this) { location -> //Should trigger the API request
+            Log.d("API", "$location.longitude ${location.latitude}") //Test
+        }
+
+        setContent {
+            Scaffold(
+                bottomBar = { BottomNavBar() }
+            ) {
+                HomeScreen()
+            }
+        }
+    }
+}
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun HomeScreen(weatherViewModel: WeatherViewModel = viewModel()) {
+    val context = LocalContext.current
+
+    //Weather API
+    var temperature by remember { mutableFloatStateOf(0f) } ////MutableFloatStateOf to hold the temperature value
+    var humidity by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the humidity value
+    LaunchedEffect(Unit) {
+            try {
+                //Calls the viewmodel to fetch the api data
+                weatherViewModel.fetchWeatherData("Dublin", "95c2e4348dcf444baeb194726231211",  "no")
+                temperature = weatherViewModel.temperature.value
+                humidity = weatherViewModel.humidity.value
+            } catch (e: Exception) {
+
+            }
+        }
+
+
+        //Temperature sensor
+        var actualtemperature by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the actualtemperature value
 
         val temperatureSensorManager = remember {
             TemperatureSensorManager(context) { newValue ->
@@ -68,7 +116,7 @@ import java.text.DecimalFormat
         }
 
         //Humidity Sensor
-        var actualthumidity by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the humidity value
+        var actualthumidity by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the actualhumidity value
 
         val humiditySensorManager = remember {
             HumiditySensorManager(context) { newValue ->
@@ -88,14 +136,14 @@ import java.text.DecimalFormat
             actualthumidity = humiditySensorManager.humidityval
         }
 
+
         Surface(
-            modifier = paddingModifier.fillMaxSize(),
+            modifier = Modifier
+                .padding()
+                .fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            DrawBackground(
-                R.drawable.clouds_background,
-                "cloud background"
-            ) //The background will change according to the current weather in future versions
+            DrawBackground(temperature)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -108,7 +156,7 @@ import java.text.DecimalFormat
                 WeatherBox(
                     icon = Icons.Default.Thermostat,
                     label = "Temperature",
-                    value = 25f, //Placeholder
+                    value = temperature,
                     suffix = "°C",
                     color = BlueCustom
                 )
@@ -141,7 +189,7 @@ import java.text.DecimalFormat
                 WeatherBox(
                     icon = Icons.Default.WaterDrop,
                     label = "Humidity",
-                    value = 60f, //Placeholder
+                    value = humidity,
                     suffix = "%",
                     color = BlueCustom
                 )
@@ -223,13 +271,24 @@ import java.text.DecimalFormat
 
     @Composable
     fun DrawBackground(
-        image: Int,
-        conentdescription: String
-    ) { //Draws the background. Takes a R.drawable as a parameter
+        temperature: Float
+    ) { //Draws the background. Takes the current temperature from the api to determine the background
+        var imageid = 0
+        var contentdescription = ""
+        if(temperature > 19){ //Draws a sunny background if the temperature is above 19 degrees
+            imageid = R.drawable.sun_background
+            contentdescription = "sunny background"
+        }else if(temperature > 5){ //Draws a cloudy background if the temperature is above 5 degrees but below 20
+            imageid = R.drawable.clouds_background
+            contentdescription = "cloudy background"
+        }else{ //Draws a freezing background if the temperature is 5 degrees or below
+            imageid = R.drawable.freezing_background
+            contentdescription = "freezing background"
+        }
         Box() {
             Image(
-                painter = painterResource(id = image),
-                contentDescription = conentdescription,
+                painter = painterResource(id = imageid),
+                contentDescription = contentdescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
