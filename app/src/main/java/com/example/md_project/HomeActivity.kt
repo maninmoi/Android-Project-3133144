@@ -1,9 +1,8 @@
 package com.example.md_project
 
-import LocationHelper
+import LocationService
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -33,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,163 +47,167 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
 import com.example.md_project.api.WeatherViewModel
 import com.example.md_project.ui.theme.BlueCustom
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import java.text.DecimalFormat
 
 class HomeActivity : ComponentActivity() {
-    private lateinit var locationHelper: LocationHelper
+    private lateinit var locationService: LocationService
+    private lateinit var locationViewModel: LocationViewModel
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @OptIn(ExperimentalMaterial3Api::class)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        locationHelper = LocationHelper(this) { location -> //Should trigger the API request
-            Log.d("API", "$location.longitude ${location.latitude}") //Test
-        }
+        locationViewModel = ViewModelProvider(this)[LocationViewModel::class.java] //Location viewmodel gets created
+        locationService = LocationService(this, locationViewModel) //Location service gets created
+
+        locationService.startLocationUpdates() //Starts the location updates
 
         setContent {
             Scaffold(
                 bottomBar = { BottomNavBar() }
             ) {
-                HomeScreen()
+                HomeScreen(locationViewModel = locationViewModel) //Gives the homescreen composable the locationViewModel
             }
         }
     }
 }
-@OptIn(ExperimentalPermissionsApi::class)
+
 @Composable
-fun HomeScreen(weatherViewModel: WeatherViewModel = viewModel()) {
-    val context = LocalContext.current
+fun HomeScreen(locationViewModel: LocationViewModel) {
+    val locationUpdateStatus by locationViewModel.locationUpdateStatus.observeAsState() //Observes if a change in the locationviewmodel happened
+    val context = LocalContext.current //Getting current context
+    var weatherViewModel = WeatherViewModel() //Creating viewmodel
 
     //Weather API
     var temperature by remember { mutableFloatStateOf(0f) } ////MutableFloatStateOf to hold the temperature value
     var humidity by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the humidity value
-    LaunchedEffect(Unit) {
-            try {
-                //Calls the viewmodel to fetch the api data
-                weatherViewModel.fetchWeatherData("Dublin", "95c2e4348dcf444baeb194726231211",  "no")
-                temperature = weatherViewModel.temperature.value
-                humidity = weatherViewModel.humidity.value
-            } catch (e: Exception) {
 
-            }
+    if (locationUpdateStatus == true) {
+        //Coroutine for API call
+        LaunchedEffect(locationUpdateStatus) {
+            weatherViewModel.fetchWeatherData("${locationViewModel.latitude.value},${locationViewModel.longitude.value}", "95c2e4348dcf444baeb194726231211" ,  "no")
+            temperature = weatherViewModel.temperature.value //Temperature value is saved into mutable variable
+            humidity = weatherViewModel.humidity.value //Humidity value is saved into mutable variable
+
+            locationViewModel.updateLocationStatus(false) //Locationupdatestatus is set to false
         }
+    }
 
 
-        //Temperature sensor
-        var actualtemperature by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the actualtemperature value
+    //Temperature sensor
+    var actualtemperature by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the actualtemperature value
 
-        val temperatureSensorManager = remember {
-            TemperatureSensorManager(context) { newValue ->
-                actualtemperature = newValue
-            }
+    val temperatureSensorManager = remember {
+        TemperatureSensorManager(context) { newValue ->
+            actualtemperature = newValue
         }
+    }
 
-        DisposableEffect(Unit) {
-            temperatureSensorManager.onResume() //Triggers when the composable is built
+    DisposableEffect(Unit) {
+        temperatureSensorManager.onResume() //Triggers when the composable is built
 
-            onDispose {
-                temperatureSensorManager.onPause() //Triggers if another composable gets build
-            }
+        onDispose {
+            temperatureSensorManager.onPause() //Triggers if another composable gets build
         }
+    }
 
-        LaunchedEffect(temperatureSensorManager.temperatureval) {
-            actualtemperature = temperatureSensorManager.temperatureval
+    LaunchedEffect(temperatureSensorManager.temperatureval) {
+        actualtemperature = temperatureSensorManager.temperatureval
+    }
+
+    //Humidity Sensor
+    var actualthumidity by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the actualhumidity value
+
+    val humiditySensorManager = remember {
+        HumiditySensorManager(context) { newValue ->
+            actualthumidity = newValue
         }
+    }
 
-        //Humidity Sensor
-        var actualthumidity by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the actualhumidity value
+    DisposableEffect(Unit) {
+        humiditySensorManager.onResume() //Triggers when the composable is built
 
-        val humiditySensorManager = remember {
-            HumiditySensorManager(context) { newValue ->
-                actualthumidity = newValue
-            }
+        onDispose {
+            humiditySensorManager.onPause() //Triggers if another composable gets build
         }
+    }
 
-        DisposableEffect(Unit) {
-            humiditySensorManager.onResume() //Triggers when the composable is built
-
-            onDispose {
-                humiditySensorManager.onPause() //Triggers if another composable gets build
-            }
-        }
-
-        LaunchedEffect(humiditySensorManager.humidityval) {
-            actualthumidity = humiditySensorManager.humidityval
-        }
+    LaunchedEffect(humiditySensorManager.humidityval) {
+        actualthumidity = humiditySensorManager.humidityval
+    }
 
 
-        Surface(
+    Surface(
+        modifier = Modifier
+            .padding()
+            .fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        DrawBackground(temperature)
+        Column(
             modifier = Modifier
-                .padding()
-                .fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center
         ) {
-            DrawBackground(temperature)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                TextInBox(text = "Weather information hub")
-                Spacer(modifier = Modifier.height(16.dp))
-                //Temperature
-                WeatherBox(
-                    icon = Icons.Default.Thermostat,
-                    label = "Temperature",
-                    value = temperature,
-                    suffix = "°C",
-                    color = BlueCustom
-                )
+            TextInBox(text = "Weather information hub")
+            Spacer(modifier = Modifier.height(16.dp))
+            //Temperature
+            WeatherBox(
+                icon = Icons.Default.Thermostat,
+                label = "Temperature",
+                value = temperature,
+                suffix = "°C",
+                color = BlueCustom
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                //Actual temperature
-                WeatherBox(
-                    icon = Icons.Default.Thermostat,
-                    label = "Actual Temperature",
-                    value = actualtemperature,
-                    suffix = "°C",
-                    color = BlueCustom
-                )
+            //Actual temperature
+            WeatherBox(
+                icon = Icons.Default.Thermostat,
+                label = "Actual Temperature",
+                value = actualtemperature,
+                suffix = "°C",
+                color = BlueCustom
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                //Predicted temperature
-                WeatherBox(
-                    icon = Icons.Default.Thermostat,
-                    label = "Predicted Temperature(Tomorrow)",
-                    value = 27.3f, //Placeholder,
-                    suffix = "°C",
-                    color = BlueCustom
-                )
+            //Predicted temperature
+            WeatherBox(
+                icon = Icons.Default.Thermostat,
+                label = "Predicted Temperature(Tomorrow)",
+                value = 27.3f, //Placeholder,
+                suffix = "°C",
+                color = BlueCustom
+            )
 
 
-                Spacer(modifier = Modifier.height(16.dp))
-                //Humidity Box
-                WeatherBox(
-                    icon = Icons.Default.WaterDrop,
-                    label = "Humidity",
-                    value = humidity,
-                    suffix = "%",
-                    color = BlueCustom
-                )
+            Spacer(modifier = Modifier.height(16.dp))
+            //Humidity Box
+            WeatherBox(
+                icon = Icons.Default.WaterDrop,
+                label = "Humidity",
+                value = humidity,
+                suffix = "%",
+                color = BlueCustom
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                //Actual humidity
-                WeatherBox(
-                    icon = Icons.Default.WaterDrop,
-                    label = "Actual Humidity",
-                    value = actualthumidity,
-                    suffix = "%",
-                    color = BlueCustom
-                )
+            //Actual humidity
+            WeatherBox(
+                icon = Icons.Default.WaterDrop,
+                label = "Actual Humidity",
+                value = actualthumidity,
+                suffix = "%",
+                color = BlueCustom
+            )
         }
     }
 }
