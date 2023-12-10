@@ -77,18 +77,18 @@ fun HealthScreen() {
             modifier = Modifier
                 .padding(40.dp),
         ) {
-                Box() {
-                    Column {
-                        DisplayText(text = "Cold temperature alert", 16.sp)
-                        TemperatureSlider()
-                        DoubleTextField()
-                        DisplayText(
-                            text = "Disable/Enable cold temperature alert",
-                            fontSize = 16.sp
-                        )
-                        Switch()
-                    }
+            Box() {
+                Column {
+                    DisplayText(text = "Cold temperature alert", 16.sp)
+                    TemperatureSlider()
+                    DoubleTextField()
+                    DisplayText(
+                        text = "Disable/Enable cold temperature alert",
+                        fontSize = 16.sp
+                    )
+                    Switch()
                 }
+            }
 
             Spacer(modifier = Modifier.height(50.dp))
             Box(){

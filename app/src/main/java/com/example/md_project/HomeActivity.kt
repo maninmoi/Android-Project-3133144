@@ -305,6 +305,7 @@ fun HomeScreen(locationViewModel: LocationViewModel) {
             modifier = Modifier
                 .background(BlueCustom)
                 .fillMaxWidth()
+                .padding(14.dp)
         ) {
             Text(
                 text = text,
