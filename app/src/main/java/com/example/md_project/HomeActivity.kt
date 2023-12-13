@@ -31,10 +31,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,17 +69,19 @@ class HomeActivity : ComponentActivity() {
         locationService.startLocationUpdates() //Starts the location updates
 
         setContent {
+            val appSettings = dataStore.data.collectAsState(initial = AppSettings()).value
+            val scope = rememberCoroutineScope()
             Scaffold(
                 bottomBar = { BottomNavBar() }
             ) {
-                HomeScreen(locationViewModel = locationViewModel) //Gives the homescreen composable the locationViewModel
+                HomeScreen(locationViewModel = locationViewModel, appSettings) //Gives the homescreen composable the locationViewModel and appSettings
             }
         }
     }
 }
 
 @Composable
-fun HomeScreen(locationViewModel: LocationViewModel) {
+fun HomeScreen(locationViewModel: LocationViewModel, appSettings: AppSettings) {
     val locationUpdateStatus by locationViewModel.locationUpdateStatus.observeAsState() //Observes if a change in the locationviewmodel happened
     val context = LocalContext.current //Getting current context
     var weatherViewModel = WeatherViewModel() //Creating viewmodel
@@ -160,8 +164,8 @@ fun HomeScreen(locationViewModel: LocationViewModel) {
             WeatherBox(
                 icon = Icons.Default.Thermostat,
                 label = "Temperature",
-                value = temperature,
-                suffix = "°C",
+                value = convertTemperature(temperature, appSettings.temperatureUnit),
+                suffix = getTemperatureSuffix(appSettings.temperatureUnit),
                 color = BlueCustom
             )
 
@@ -171,8 +175,8 @@ fun HomeScreen(locationViewModel: LocationViewModel) {
             WeatherBox(
                 icon = Icons.Default.Thermostat,
                 label = "Actual Temperature",
-                value = actualtemperature,
-                suffix = "°C",
+                value = convertTemperature(actualtemperature, appSettings.temperatureUnit),
+                suffix = getTemperatureSuffix(appSettings.temperatureUnit),
                 color = BlueCustom
             )
 
@@ -182,32 +186,34 @@ fun HomeScreen(locationViewModel: LocationViewModel) {
             WeatherBox(
                 icon = Icons.Default.Thermostat,
                 label = "Predicted Temperature(Tomorrow)",
-                value = 27.3f, //Placeholder,
-                suffix = "°C",
+                value = convertTemperature(27.3f, appSettings.temperatureUnit), //Placeholder,
+                suffix = getTemperatureSuffix(appSettings.temperatureUnit),
                 color = BlueCustom
             )
 
 
             Spacer(modifier = Modifier.height(16.dp))
             //Humidity Box
-            WeatherBox(
-                icon = Icons.Default.WaterDrop,
-                label = "Humidity",
-                value = humidity,
-                suffix = "%",
-                color = BlueCustom
-            )
+            if(appSettings.humiditySwitch) { //Draws the humidity boxes if set to true
+                WeatherBox(
+                    icon = Icons.Default.WaterDrop,
+                    label = "Humidity",
+                    value = humidity,
+                    suffix = "%",
+                    color = BlueCustom
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            //Actual humidity
-            WeatherBox(
-                icon = Icons.Default.WaterDrop,
-                label = "Actual Humidity",
-                value = actualthumidity,
-                suffix = "%",
-                color = BlueCustom
-            )
+                //Actual humidity
+                WeatherBox(
+                    icon = Icons.Default.WaterDrop,
+                    label = "Actual Humidity",
+                    value = actualthumidity,
+                    suffix = "%",
+                    color = BlueCustom
+                )
+            }
         }
     }
 }
@@ -316,4 +322,32 @@ fun HomeScreen(locationViewModel: LocationViewModel) {
                     .align(Alignment.Center)
             )
         }
+}
+
+//Function to convert Celsius to Fahrenheit
+fun celsiusToFahrenheit(celsius: Float): Float {
+    return (celsius * 9 / 5) + 32
+}
+
+//Function to convert Celsius to Kelvin
+fun celsiusToKelvin(celsius: Float): Float {
+    return celsius + 273.15f
+}
+
+//Function to get the temperature suffix based on the selected unit from AppSettings
+fun getTemperatureSuffix(temperatureUnit: TemperatureUnit): String {
+    return when (temperatureUnit) {
+        TemperatureUnit.CELSIUS -> "°C"
+        TemperatureUnit.FAHRENHEIT -> "°F"
+        TemperatureUnit.KELVIN -> "K"
+    }
+}
+
+//Converts temperature to selected unit
+fun convertTemperature(temperature: Float, targetUnit: TemperatureUnit): Float {
+    return when (targetUnit) {
+        TemperatureUnit.CELSIUS -> temperature
+        TemperatureUnit.FAHRENHEIT -> celsiusToFahrenheit(temperature)
+        TemperatureUnit.KELVIN -> celsiusToKelvin(temperature)
+    }
 }

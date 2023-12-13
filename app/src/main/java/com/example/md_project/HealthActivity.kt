@@ -22,11 +22,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,8 +41,10 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import com.example.md_project.api.WeatherViewModel
 import com.example.md_project.ui.theme.BlueCustom
+import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 import java.util.concurrent.TimeUnit
+
 
 class HealthActivity : ComponentActivity() {
     private lateinit var weatherViewModel: WeatherViewModel
@@ -48,7 +52,6 @@ class HealthActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         weatherViewModel = ViewModelProvider(this).get(WeatherViewModel::class.java)
 
         val periodicWorkRequest = PeriodicWorkRequest.Builder(
@@ -59,45 +62,63 @@ class HealthActivity : ComponentActivity() {
         // Enqueue the work request
         WorkManager.getInstance(this).enqueue(periodicWorkRequest)
         setContent {
+            val appSettings = dataStore.data.collectAsState(initial = AppSettings()).value
+            val scope = rememberCoroutineScope()
             Scaffold(
                 bottomBar = { BottomNavBar() }
             ) {
-                HealthScreen()
-            }
-        }
-    }
-}
-@Composable
-fun HealthScreen() {
-    Surface(
-        modifier = Modifier.padding().fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(40.dp),
-        ) {
-            Box() {
-                Column {
-                    DisplayText(text = "Cold temperature alert", 16.sp)
-                    TemperatureSlider()
-                    DoubleTextField()
-                    DisplayText(
-                        text = "Disable/Enable cold temperature alert",
-                        fontSize = 16.sp
-                    )
-                    Switch()
-                }
-            }
+                Surface(
+                    modifier = Modifier.padding().fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(40.dp),
+                    ) {
+                        Box() {
+                            Column {
+                                DisplayText(text = "Cold temperature alert", 16.sp)
+                                TemperatureSlider()
+                                DoubleTextField()
+                                DisplayText(
+                                    text = "Disable/Enable cold temperature alert",
+                                    fontSize = 16.sp
+                                )
+                                Switch(
+                                    label = "Cold Temperature Alert",
+                                    isChecked = appSettings.coldTemperatureAlertSwitch,
+                                    onCheckedChange = {
+                                        scope.launch {
+                                            dataStore.updateData { currentSettings ->
+                                                currentSettings.copy(coldTemperatureAlertSwitch = it)
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
 
-            Spacer(modifier = Modifier.height(50.dp))
-            Box(){
-                Column {
-                    DisplayText(text = "Hot temperature alert", 16.sp)
-                    TemperatureSlider()
-                    DoubleTextField()
-                    DisplayText(text = "Disable/Enable hot temperature alert", fontSize = 16.sp)
-                    Switch()
+                        Spacer(modifier = Modifier.height(50.dp))
+                        Box(){
+                            Column {
+                                DisplayText(text = "Hot temperature alert", 16.sp)
+                                TemperatureSlider()
+                                DoubleTextField()
+                                DisplayText(text = "Disable/Enable hot temperature alert", fontSize = 16.sp)
+                                Switch(
+                                    label = "Hot Temperature Alert",
+                                    isChecked = appSettings.hotTemperatureAlertSwitch,
+                                    onCheckedChange = {
+                                        scope.launch {
+                                            dataStore.updateData { currentSettings ->
+                                                currentSettings.copy(hotTemperatureAlertSwitch = it)
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
