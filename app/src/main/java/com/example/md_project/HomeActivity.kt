@@ -87,12 +87,12 @@ fun HomeScreen(locationViewModel: LocationViewModel, appSettings: AppSettings) {
     val locationUpdateStatus by locationViewModel.locationUpdateStatus.observeAsState() //Observes if a change in the locationviewmodel happened
     val context = LocalContext.current //Getting current context
     var weatherViewModel = WeatherViewModel() //Creating viewmodel
-    //deleteTemperatureRecords(context)
+
     //Weather API
     var temperature by remember { mutableFloatStateOf(0f) } ////MutableFloatStateOf to hold the temperature value
     var humidity by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the humidity value
     var predictedTemperature by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the predicted temperature
-    val scope = rememberCoroutineScope()
+
     if (locationUpdateStatus == true) {
         //Coroutine for API call
         LaunchedEffect(locationUpdateStatus) {
@@ -104,16 +104,17 @@ fun HomeScreen(locationViewModel: LocationViewModel, appSettings: AppSettings) {
             val newRecord = TemperatureRecord(LocalDate.now().format(DateTimeFormatter.ISO_DATE), temperature)
             saveTemperatureRecord(newRecord, context)
 
+            //Predicted temperature
+            val loadedRecords = loadTemperatureRecords(context) //Loads 0-7 temperatures from TemperatureRecord
+            var temporaryTemperature = 0f
+            for (record in loadedRecords) {
+                temporaryTemperature+=record.temperature //Adds all temperatures
+            }
+            predictedTemperature = temporaryTemperature/loadedRecords.size //Divides the value of all temperatures by the amount of temperatureRecords
         }
     }
 
-    //Predicted temperature
-    val loadedRecords = loadTemperatureRecords(context) //Loads 0-7 temperatures from TemperatureRecord
-    var temporaryTemperature = 0f
-    for (record in loadedRecords) {
-        temporaryTemperature+=record.temperature //Adds all temperatures
-    }
-    predictedTemperature = temporaryTemperature/loadedRecords.size //Divides the value of all temperatures by the amount of temperatureRecords
+
 
     //Temperature sensor
     var actualtemperature by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the actualtemperature value

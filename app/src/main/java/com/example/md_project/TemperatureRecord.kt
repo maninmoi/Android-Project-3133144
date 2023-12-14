@@ -2,6 +2,7 @@ package com.example.md_project
 
 import android.content.Context
 import com.google.gson.Gson
+import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -36,9 +37,16 @@ fun saveTemperatureRecord(newRecord: TemperatureRecord, context: Context) {
 }
 
 
-fun loadTemperatureRecords(context: Context): List<TemperatureRecord> { //Loads the records from json
-    val fileInputStream = context.openFileInput("temperature_records.json")
-    val jsonString = fileInputStream.bufferedReader().use { it.readText() }
+fun loadTemperatureRecords(context: Context): List<TemperatureRecord> {
+    val fileName = "temperature_records.json"
+
+    //Checks if the file exists
+    val file = File(context.filesDir, "temperature_records.json")
+    if (!file.exists()) {
+        return emptyList()
+    }
+
+    val jsonString = context.openFileInput(fileName).bufferedReader().use { it.readText() }
     return Gson().fromJson(jsonString, Array<TemperatureRecord>::class.java).toList()
 }
 

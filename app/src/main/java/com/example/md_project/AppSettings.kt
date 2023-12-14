@@ -10,8 +10,8 @@ data class AppSettings( //Holds settings
     val reminderToDrinkSwitch: Boolean = true,
     val coldTemperatureAlertSwitch: Boolean = true,
     val hotTemperatureAlertSwitch: Boolean = true,
-    val coldTemperatureValue: Double = 20.0,
-    val hotTemperatureValue: Double = 20.0
+    val coldTemperatureValue: Float = 20f,
+    val hotTemperatureValue: Float = 20f
 
 )
 
