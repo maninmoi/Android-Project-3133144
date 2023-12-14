@@ -19,7 +19,7 @@ class MyApp : Application(){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
             Log.d("Notification", "Channel created")
             val channel = NotificationChannel(
-                "test1",
+                "3",
                 "test1",
                 NotificationManager.IMPORTANCE_DEFAULT
             )

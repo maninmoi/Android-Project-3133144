@@ -53,6 +53,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.md_project.api.WeatherViewModel
 import com.example.md_project.ui.theme.BlueCustom
 import java.text.DecimalFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class HomeActivity : ComponentActivity() {
     private lateinit var locationService: LocationService
@@ -85,11 +87,12 @@ fun HomeScreen(locationViewModel: LocationViewModel, appSettings: AppSettings) {
     val locationUpdateStatus by locationViewModel.locationUpdateStatus.observeAsState() //Observes if a change in the locationviewmodel happened
     val context = LocalContext.current //Getting current context
     var weatherViewModel = WeatherViewModel() //Creating viewmodel
-
+    //deleteTemperatureRecords(context)
     //Weather API
     var temperature by remember { mutableFloatStateOf(0f) } ////MutableFloatStateOf to hold the temperature value
     var humidity by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the humidity value
-
+    var predictedTemperature by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the predicted temperature
+    val scope = rememberCoroutineScope()
     if (locationUpdateStatus == true) {
         //Coroutine for API call
         LaunchedEffect(locationUpdateStatus) {
@@ -97,10 +100,20 @@ fun HomeScreen(locationViewModel: LocationViewModel, appSettings: AppSettings) {
             temperature = weatherViewModel.temperature.value //Temperature value is saved into mutable variable
             humidity = weatherViewModel.humidity.value //Humidity value is saved into mutable variable
 
-            locationViewModel.updateLocationStatus(false) //Locationupdatestatus is set to false
+            //Adds a new temperature record to predict the temperature
+            val newRecord = TemperatureRecord(LocalDate.now().format(DateTimeFormatter.ISO_DATE), temperature)
+            saveTemperatureRecord(newRecord, context)
+
         }
     }
 
+    //Predicted temperature
+    val loadedRecords = loadTemperatureRecords(context) //Loads 0-7 temperatures from TemperatureRecord
+    var temporaryTemperature = 0f
+    for (record in loadedRecords) {
+        temporaryTemperature+=record.temperature //Adds all temperatures
+    }
+    predictedTemperature = temporaryTemperature/loadedRecords.size //Divides the value of all temperatures by the amount of temperatureRecords
 
     //Temperature sensor
     var actualtemperature by remember { mutableFloatStateOf(0f) } //MutableFloatStateOf to hold the actualtemperature value
@@ -186,7 +199,7 @@ fun HomeScreen(locationViewModel: LocationViewModel, appSettings: AppSettings) {
             WeatherBox(
                 icon = Icons.Default.Thermostat,
                 label = "Predicted Temperature(Tomorrow)",
-                value = convertTemperature(27.3f, appSettings.temperatureUnit), //Placeholder,
+                value = convertTemperature(predictedTemperature, appSettings.temperatureUnit), //Placeholder,
                 suffix = getTemperatureSuffix(appSettings.temperatureUnit),
                 color = BlueCustom
             )
